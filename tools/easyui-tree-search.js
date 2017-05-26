@@ -11,8 +11,8 @@
 // </div>
 
 /* 可配置选项:
- vagueAttrArray: [],						// 模糊查询的属性, 可以为字符串(默认子字符串查询), 可以为object, 指定属性以及筛选方式, 如下：['text', {name: 'code', filter: function(value, objectValue){}}]
- width: 300,								// 默认宽度
+ vagueAttrArray: [],							// 模糊查询的属性, 可以为字符串(默认子字符串查询), 可以为object, 指定属性以及筛选方式, 如下：['text', {name: 'code', filter: function(value, objectValue){}}]
+ width: 300,									// 默认宽度
  height: 620,								// 默认高度
  title: 'B-Dialog',							// 弹出框title
  dataUrl: null,								// 弹窗数据请求url, 可在open时传入永久覆盖
@@ -20,7 +20,8 @@
  existedTmeplate: '${text}(${code})',		// 已存在数据模板(目前必须存在code)
  existedSeparator: ',',						// 已存数据的分隔符
  compareToLowercase: true,					// 模糊查询进行默认字符串比较的时候是否要care大小写字母
- vagueDelay: 500							// 模糊查询频率(ms/次)*/
+ vagueDelay: 500								// 模糊查询频率(ms/次)
+ filterNodes: function(node){}               // 判断该节点是否需要(比如不要父节点之类的)*/
 
 /* 可注册事件
  注册方式：
@@ -109,7 +110,9 @@
         // 模糊查询进行默认字符串比较的时候是否要统一小写字母
         compareToLowercase: true,
         // 模糊查询频率(ms/次)
-        vagueDelay: 500
+        vagueDelay: 500,
+        // 获取符合要求的节点的函数
+        filterNodes: null
     }
 
     // 构造函数
@@ -304,7 +307,11 @@
         var allData = this.$treeContainer.tree('getChecked');
         var data = {}
         for(var i=0; i<allData.length; i++) {
-            data[allData[i].code] = allData[i]
+            if (this.options.filterNodes) {
+                this.options.filterNodes(allData[i]) && (data[allData[i].code] = allData[i])
+            } else {
+                data[allData[i].code] = allData[i]
+            }
         }
         return data
     }
