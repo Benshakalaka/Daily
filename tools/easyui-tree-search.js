@@ -151,12 +151,6 @@
         // 开始重新初始化
         var newData = Util._deepCopy(_this._storedData)
 
-        // 重建 tree-container
-        var newUl = $('<ul />')
-        newUl.insertBefore(_this.$treeContainer).attr('class', 'tree-container')
-        _this.$treeContainer.remove()
-        _this.$treeContainer = newUl
-
         // 筛选数据
         for(var i = 0; i<newData.length; i++) {
             var parts = newData[i].children
@@ -178,6 +172,7 @@
 
     // 保存按钮
     BDialog.prototype.save = function() {
+
         // 最后一次修改后, 需要合并处理一下, 放在这里
         this._updataCheckedData(this._existedData, this._previousData, this._getTreeCheckedData())
 
@@ -224,6 +219,7 @@
             resizable:true,
             closed: false,
             onOpen: function () {
+                _this.$input.focus()
                 _this.$container.trigger(Event.DIALOG_OPEN_EVENT)
                 $$.fillDialogWidthAndHeight(_this.$container.attr('id'), _this.options.width, _this.options.height)
                 _this._initTree(null, _this.options.dataUrl)
@@ -240,40 +236,39 @@
     // 初始化树组件
     BDialog.prototype._initTree = function (data, url) {
         var _this = this
+
+        if(!data && !url) {
+            return
+        }
+
         var initObject = {
             animate : true,  //定义节点在展开或折叠的时候是否显示动画效果。
             lines : true,  //定义是否显示树控件上的虚线。
             //onlyLeafCheck: true,
             dnd: true,  //定义是否启用拖拽功能。
             multiple:true,
-            checkbox : true  //定义是否在每一个节点之前都显示复选框。
-        }
-
-        if(!data && !url) {
-            return
+            checkbox : true,  //定义是否在每一个节点之前都显示复选框。
+            loadFilter: function (data) {
+                return _this._data2DisplayAddress(Util._deepCopy(data))
+            }
         }
 
         // 本地数据(搜索)
-        data && $.extend(initObject, {
-            data: data,
-            loadFilter: function (data) {
-                return _this._data2DisplayAddress(Util._deepCopy(data))
-            }
-        })
-
-        // 远端数据(初始加载)
-        !data && url && $.extend(initObject, {
-            url: url,
-            onLoadSuccess: function () {
-                _this.$input.val('')
-            },
-            loadFilter: function (data) {
-                _this._storedData = data
-                return _this._data2DisplayAddress(Util._deepCopy(data))
-            }
-        })
-
-        _this.$treeContainer.tree(initObject);
+        if (data && !url) {
+            initObject.data = data
+            _this.$treeContainer.tree(initObject)
+        } else {
+            _this.$input.val('')
+            $.ajax({
+                type: 'POST',
+                url: url,
+                success: function(oData){
+                    _this._storedData = oData
+                    initObject.data = oData
+                    _this.$treeContainer.tree(initObject)
+                }
+            })
+        }
     }
 
     //
@@ -331,10 +326,7 @@
 
         // 处理所有: allData + addData - removeData
         for(var key in addNodes) {
-            allData[key] = {
-                text: addNodes[key].text,
-                code: addNodes[key].code
-            }
+            allData[key] = addNodes[key]
         }
 
         for(key in removeNodes) {
