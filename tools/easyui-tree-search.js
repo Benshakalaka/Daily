@@ -148,22 +148,9 @@
         // 初始化之前处理上次选中、取消选中
         _this._updataCheckedData(_this._existedData, _this._previousData, _this._getTreeCheckedData())
 
-        // 开始重新初始化
-        var newData = Util._deepCopy(_this._storedData)
-
-        // 筛选数据
-        for(var i = 0; i<newData.length; i++) {
-            var parts = newData[i].children
-            var k = 0
-            for(var j=0; j<parts.length; j++){
-                var part = parts[j]
-                if (_this._validateObject(value, part, _this.options.vagueAttrArray)) {
-                    parts[k] = part
-                    k += 1
-                }
-            }
-            parts.length = k
-        }
+        // 开始用筛选后的数据重新初始化
+        var newData = $.extend(true, [], _this._storedData)
+        _this._vagueSearchFilter(newData, value)
 
         // 初始化
         _this._initTree(newData)
@@ -249,7 +236,7 @@
             multiple:true,
             checkbox : true,  //定义是否在每一个节点之前都显示复选框。
             loadFilter: function (data) {
-                return _this._data2DisplayAddress(Util._deepCopy(data))
+                return _this._data2DisplayAddress($.extend(true, [], data))
             }
         }
 
@@ -271,30 +258,54 @@
         }
     }
 
-    //
-    BDialog.prototype._data2DisplayAddress = function (newData) {
-        // 处理数据
-        var treeDatas = this._existedData, codeStr = ''
-        for(var key in treeDatas){
-            if (!treeDatas.hasOwnProperty(key)) {
-                continue
-            }
+    // 模糊搜索过滤
+    BDialog.prototype._vagueSearchFilter = function (newData, value) {
+        var _this = this
+        search(newData, value)
 
-            codeStr = key
-            for(var j=0;j<newData.length;j++){
-                for(var k=0;k<newData[j].children.length;k++){
-                    if(codeStr === newData[j].children[k].code){
-                        newData[j].children[k].checked = "true";
-                    }
+        function search(newData, value) {
+            for(var i = 0, k = 0; i < newData.length; i++) {
+                var node = newData[i]
+                // 文件夹节点不参与filter
+                if (Object.prototype.hasOwnProperty.call(node, 'children')) {
+                    arguments.callee(node.children, value)
+                    newData[k++] = node
+                } else if (_this._validateObject(value, node)) {
+                    newData[k++] = node
                 }
             }
+            newData.length = k
         }
+    }
+
+    // 重新初始化树后默认选中一些之前选中的
+    BDialog.prototype._data2DisplayAddress = function (newData) {
+        // 处理数据
+        this._treeDataChecked(newData)
 
         var loadDataEvent = $.Event(Event.TREE_DATA_FILTER, {
             data2Address: newData
         })
         this.$container.trigger(loadDataEvent)
         return newData
+    }
+
+    // 重新初始化树后默认选中一些之前选中的
+    BDialog.prototype._treeDataChecked = function (newData) {
+        var _this = this
+        check(newData)
+
+        function check(newData) {
+            var node = null
+            for(var i = 0; i < newData.length; i++) {
+                node = newData[i]
+                if(Object.prototype.hasOwnProperty.call(node, 'children')) {
+                    arguments.callee(node.children)
+                } else if ('code' in node && node.code in _this._existedData) {
+                    node.checked = true
+                }
+            }
+        }
     }
 
     // 获取树组件选中元素
@@ -356,9 +367,8 @@
     };
 
     // 对一个对象进行筛选, 根据给定的属性, 以及可能携带的该属性的验证方法
-    BDialog.prototype._validateObject = function (value, object, vagueAttrArray) {
-        var _this = this
-
+    BDialog.prototype._validateObject = function (value, object) {
+        var _this = this, vagueAttrArray = this.options.vagueAttrArray
         var filter = null, toValidateAttr = null
         for (var i = 0; i < vagueAttrArray.length; i++) {
             toValidateAttr = vagueAttrArray[i]
@@ -440,23 +450,6 @@ var Util = {
         })(callback)
     },
 
-    // 深拷贝一份数据(无法复用)
-    _deepCopy: function(data) {
-        var newData = []
-
-        for(var i=0; i<data.length; i++) {
-            var oneData = $.extend({}, data[i])
-            oneData.children = []
-            var oriData = data[i].children
-            for(var j=0; j<oriData.length; j++){
-                var child = $.extend({}, oriData[j])
-                oneData.children.push(child)
-            }
-            newData.push(oneData)
-        }
-
-        return newData
-    },
     // 模板规则
     TEMPLATE_FORMAT_REGEXP: /\$\{(.+?)\}/g,
     /**
