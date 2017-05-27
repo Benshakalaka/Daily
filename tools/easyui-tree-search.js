@@ -21,11 +21,15 @@
  existedSeparator: ',',						// 已存数据的分隔符
  compareToLowercase: true,					// 模糊查询进行默认字符串比较的时候是否要care大小写字母
  vagueDelay: 500								// 模糊查询频率(ms/次)
- filterNodes: function(node){}               // 判断该节点是否需要(比如不要父节点之类的)
+ filterNodes: function(node){}               // 判断该节点是否需要,控制返回结果(比如不要父节点之类的)   返回true表示需要, false表示弃
  alwaysOpen: false,                          // 所有文件夹节点总是保持打开状态
  isLeaf: null,                               // 如何判断一个节点是叶子节点(查询时不会过滤永久保留, 不被高亮)
  highLight: false,                           // 是否需要高亮查出人员
- highLightStyle: null                        // 可指定高亮样式, 如下: {color: '#000', 'font-weight': 'bold'}*/
+ highLightStyle: null                        // 可指定高亮样式, 如下: {color: '#000', 'font-weight': 'bold'}
+ treeOptions                                 // 树组件属性, 可自己绑定事件等*/
+
+
+
 /* 可注册事件
  注册方式：
  $(最外层元素).on('事件名', function(event){})
@@ -123,7 +127,9 @@
         // 高亮查出人员
         highLight: false,
         // 高亮样式
-        highLightStyle: null
+        highLightStyle: null,
+        // 树组件拓展属性
+        treeOptions: null
     }
 
     // 构造函数
@@ -252,6 +258,9 @@
                 return _this._data2DisplayAddress($.extend(true, [], data))
             }
         }
+
+        // 可用于为树组件绑定事件以及控制一些属性
+        _this.options.treeOptions && $.extend(initObject, _this.options.treeOptions)
 
         // 本地数据(搜索)
         if (data && !url) {
