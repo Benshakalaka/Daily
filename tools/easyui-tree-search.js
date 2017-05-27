@@ -21,8 +21,11 @@
  existedSeparator: ',',						// 已存数据的分隔符
  compareToLowercase: true,					// 模糊查询进行默认字符串比较的时候是否要care大小写字母
  vagueDelay: 500								// 模糊查询频率(ms/次)
- filterNodes: function(node){}               // 判断该节点是否需要(比如不要父节点之类的)*/
-
+ filterNodes: function(node){}               // 判断该节点是否需要(比如不要父节点之类的)
+ alwaysOpen: false,                          // 所有文件夹节点总是保持打开状态
+ isLeaf: null,                               // 如何判断一个节点是叶子节点(查询时不会过滤永久保留, 不被高亮)
+ highLight: false,                           // 是否需要高亮查出人员
+ highLightStyle: null                        // 可指定高亮样式, 如下: {color: '#000', 'font-weight': 'bold'}*/
 /* 可注册事件
  注册方式：
  $(最外层元素).on('事件名', function(event){})
@@ -43,7 +46,7 @@
  调用方式：
  $('xxx').bdialog('???')
  事件类型：
- 1. open : 打开   , 可带参数:  获取tree数据的 url
+ 1. open : 打开   , 可带参数:  获取tree数据的 url, 以及提供ajax的一些选项(其中必要时指定success属性, return结果为从返回数据中提取出的树所需数据)
  2. vagueSearch: 模糊搜索,   参数： 模糊搜索的value
  3. save 确定按钮
  4. cancel  取消按钮
@@ -112,7 +115,15 @@
         // 模糊查询频率(ms/次)
         vagueDelay: 500,
         // 获取符合要求的节点的函数
-        filterNodes: null
+        filterNodes: null,
+        // 无论模糊查询结果是啥, 总是打开所有文件夹节点
+        alwaysOpen: false,
+        // 如何判断一个节点是叶子节点
+        isLeaf: null,
+        // 高亮查出人员
+        highLight: false,
+        // 高亮样式
+        highLightStyle: null
     }
 
     // 构造函数
@@ -138,7 +149,7 @@
         // 把最终数据字符串化的函数
         this._stringifyFromData = null
 
-        this.setExistedData(this.options.existedData)
+        this.setExistedData(this.options.existedData || '')
         this._addEventHandler()
     }
 
@@ -154,6 +165,8 @@
 
         // 初始化
         _this._initTree(newData)
+        // 是否高亮
+        value !== '' && _this.options.highLight && _this._highLight(_this.$treeContainer.tree('getRoots'))
         _this._previousData = _this._getTreeCheckedData()
     };
 
@@ -193,7 +206,7 @@
     }
 
     // 手动打开弹出框
-    BDialog.prototype.open = function (url) {
+    BDialog.prototype.open = function (url, option) {
         var _this = this
         url && $.extend(_this.options, {
             dataUrl: url
@@ -209,7 +222,7 @@
                 _this.$input.focus()
                 _this.$container.trigger(Event.DIALOG_OPEN_EVENT)
                 $$.fillDialogWidthAndHeight(_this.$container.attr('id'), _this.options.width, _this.options.height)
-                _this._initTree(null, _this.options.dataUrl)
+                _this._initTree(null, _this.options.dataUrl, option)
             },
             onClose: function () {
                 _this.$container.trigger(Event.DIALOG_CLOSE_EVENT)
@@ -221,7 +234,7 @@
     }
 
     // 初始化树组件
-    BDialog.prototype._initTree = function (data, url) {
+    BDialog.prototype._initTree = function (data, url, option) {
         var _this = this
 
         if(!data && !url) {
@@ -246,16 +259,46 @@
             _this.$treeContainer.tree(initObject)
         } else {
             _this.$input.val('')
-            $.ajax({
+            var ajaxOptions = {
                 type: 'POST',
-                url: url,
+                url: url
+            }
+            var successHandler = option ? option.success : null
+            $.extend(ajaxOptions, option || {}, {
                 success: function(oData){
-                    _this._storedData = oData
-                    initObject.data = oData
+                    var data = successHandler ? successHandler(oData) : null
+                    if (data === false) {
+                        return
+                    }
+
+                    data = data || oData
+                    _this._storedData = data
+                    initObject.data = data
                     _this.$treeContainer.tree(initObject)
                 }
             })
+            $.ajax(ajaxOptions)
         }
+    }
+
+    // 高亮所有叶子节点
+    BDialog.prototype._highLight = function (allData) {
+        for(var i=0; i<allData.length; i++) {
+            var node = allData[i]
+            if (!this._isLeaf(node)) {
+                arguments.callee.call(this, node.children)
+            } else {
+                this._highLightStyle(node.target || this.$treeContainer.tree('find', node.id).target)
+            }
+        }
+    }
+
+    // 高亮方式
+    BDialog.prototype._highLightStyle = function (element) {
+        $(element).css(this.options.highLightStyle || {
+                color: '#0C3',
+                'font-weight': 'bold'
+            })
     }
 
     // 模糊搜索过滤
@@ -264,17 +307,35 @@
         search(newData, value)
 
         function search(newData, value) {
+            if(Object.prototype.toString.call(newData) === '[object Array]' &&  newData.length === 0) {
+                return false
+            }
+            // hasFound: 这一层是否有找到的
+            // childHasFound: 这一层某个节点是否有找到的
+            var hasFound = false, childHasFound = false
             for(var i = 0, k = 0; i < newData.length; i++) {
                 var node = newData[i]
+                childHasFound = false
                 // 文件夹节点不参与filter
-                if (Object.prototype.hasOwnProperty.call(node, 'children')) {
-                    arguments.callee(node.children, value)
+                if (!_this._isLeaf(node)) {
+                    (childHasFound = arguments.callee(node.children, value)) && (hasFound = true)
                     newData[k++] = node
+                    if (_this.options.alwaysOpen) {
+                        node.state = 'open'
+                    } else if (value === '') {
+                        node.state = 'closed'
+                    } else if (childHasFound) {
+                        node.state = 'open'
+                    } else {
+                        node.state = 'closed'
+                    }
                 } else if (_this._validateObject(value, node)) {
                     newData[k++] = node
+                    hasFound = true
                 }
             }
             newData.length = k
+            return hasFound
         }
     }
 
@@ -299,13 +360,25 @@
             var node = null
             for(var i = 0; i < newData.length; i++) {
                 node = newData[i]
-                if(Object.prototype.hasOwnProperty.call(node, 'children')) {
+                if(!_this._isLeaf(node)) {
                     arguments.callee(node.children)
                 } else if ('code' in node && node.code in _this._existedData) {
                     node.checked = true
                 }
             }
         }
+    }
+
+    // 判断是文件夹节点
+    BDialog.prototype._isLeaf = function (node) {
+        if (this.options.isLeaf) {
+            return this.options.isLeaf(node)
+        }
+
+        if (Object.prototype.hasOwnProperty.call(node, 'children')) {
+            return false
+        }
+        return true
     }
 
     // 获取树组件选中元素
@@ -395,7 +468,8 @@
 
     // jQuery初始化
     BDialog._jqueryInterface = function(config) {
-        var _arguments = arguments
+        var _arguments = Array.prototype.slice.call(arguments)
+        _arguments.shift()
         return this.each(function () {
             var data = $(this).data(DATA_KEY)
             var _config = $.extend({}, Default, $(this).data())
@@ -415,7 +489,7 @@
                 }
 
                 if (config === 'open' || config === 'vagueSearch') {
-                    data[config](_arguments[1])
+                    data[config].apply(data, _arguments)
                 } else {
                     data[config]()
                 }
