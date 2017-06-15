@@ -519,18 +519,16 @@ var Util = {
 
     // 延迟执行(一段时间内只执行一次)
     _delay: function (callback, interval) {
-        interval = interval || this.DELAY_INTERVAL
-        return (function (callback) {
-            var timeout = null
-            return function () {
-                timeout && clearTimeout(timeout)
-                var _this = this, _arguments = arguments
-                timeout = setTimeout(function() {
-                    callback && callback.apply(_this, _arguments)
-                    timeout = null
-                }, interval);
-            }
-        })(callback)
+        interval !== 0 && (interval = interval || this.DELAY_INTERVAL)
+        var timeout = null
+        return function () {
+            timeout && clearTimeout(timeout)
+            var _this = this, _arguments = arguments
+            timeout = setTimeout(function() {
+                callback && callback.apply(_this, _arguments)
+                timeout = null
+            }, interval);
+        }
     },
 
     // 模板规则
