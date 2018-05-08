@@ -1,0 +1,5 @@
+﻿webpack-dev-server不能自动刷新问题（https://www.cnblogs.com/llauser/p/6795428.html）：
+	1.webpack-dev-server并不能读取你的webpack.config.js的配置output！！
+		你在webpack.config.js里面的配置output属性是你用webpack打包时候才起作用的，对webpack-dev-server并不起作用
+	2.webpack-dev-server打包生产的文件并不会添加在你的项目目录中！！
+		它默认打包的文件名是bundle.js，不会真的出现在你的项目目录中，据推测应该是保存在自己的环境中
