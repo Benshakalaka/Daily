@@ -1,0 +1,84 @@
+{
+	"Base_Config": {
+		
+		"devices": [{
+			"id": "xiaomi",
+			"uuid": "A3P4E8482109",
+			"screenPass": "0000",
+			"keepOld": true
+		}, {
+			"id": "sansumg_big_black",
+			"screenPass": "1111",
+			"keepOld": true
+		}, {
+			"id": "sansumg_small",
+			"screenPass": "",
+			"keepOld": false
+		}],
+
+		"remote_address": "\\\\SHCAPPSVM60.hpeswlab.net\\qot_build\\latest\\",
+		"folder_name": "QoTBuild",
+		"file_name": "",
+		"dist_dir": "",
+		"unzip": ["zip"],
+		"unzip_detail": false,
+		"remove_after_unzip": false,
+		"open_dir_after_done": true,
+		"auto_install_apk": false,
+		"download_is_folder": false,
+		"need_show_progress": true
+	},
+
+	"Nightly_Latest_QoT.apk": {
+		"file_name": "ALM_QoT.apk",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\download_test\\",
+		"open_dir_after_done": false,
+
+		"auto_install_apk": true,
+		"open_app_after_installed": true,
+
+		"packageName": "com.microfocus.QoT",
+		"mainActivity": ".MainActivity"
+	},
+
+	"Nightly_Latest_Qot.zip": {
+		"file_name": "ALM_QoT.zip",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\download_test\\",
+		"remove_after_unzip": true
+	},
+
+	"Other": {
+		"folder_name": "",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\download_test\\"
+	},
+
+	"Local_QoT_install.apk": {
+		"file_name": "ALM_QoT.apk",
+		"remote_address": "C:\\Users\\yuanhai\\Workspace\\smallp\\hehe\\",
+		"folder_name": "APK folder",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\hehe\\APK folder\\e",
+		"open_dir_after_done": false,
+
+		"auto_install_apk": true,
+		"open_app_after_installed": true,
+
+		"packageName": "com.microfocus.QoT",
+		"mainActivity": ".MainActivity"
+	},
+
+	"Folder_Copy": {
+		"remote_address": "C:\\Users\\yuanhai\\Workspace\\",
+		"folder_name": "myp",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\download_test\\",
+		"download_is_folder": true,
+		"need_show_progress": false
+	},
+
+	"Manually_Choose": {
+		"remote_address": "C:\\Users\\yuanhai\\Workspace\\",
+		"folder_name": "",
+		"dist_dir": "C:\\Users\\yuanhai\\Workspace\\smallp\\download_test\\",
+		"remove_after_unzip": true,
+		"need_show_progress": false
+	}
+}
